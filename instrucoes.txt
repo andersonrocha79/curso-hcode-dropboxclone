@@ -47,3 +47,19 @@ vincula o projeto git local para o github
 
 git push -u origin master
 envia o projeto local para os servidor github, no branch 'master'
+
+
+----------------------------------------------------------------------------------------
+Enviando alterações no projeto para o servidor
+----------------------------------------------------------------------------------------
+git status	
+exibe se tem arquivos alterados na pasta
+
+git add *
+adiciona todos os arquivos alterados ao controle de versão
+
+git commit -m "alterações no arquivo de instruções do projeto"
+confirmando as alterações realizadas nos arquivos alterados
+
+git push -u origin master
+envia os arquivos alterados para os servidor github
