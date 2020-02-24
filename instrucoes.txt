@@ -1,3 +1,7 @@
+----------------------------------------------------------------------------------------
+Instruções do projeto "DropBoxClone" da HCode (udemy)
+Anderson Rocha - 24/02/2020
+----------------------------------------------------------------------------------------
 
 A pasta tem o arquivo "bower.json", indicando que tem dependências de front end
 para instalar as dependências visuais do projeto, basta executar o comando abaixo:
@@ -22,3 +26,24 @@ npm start
 o site vai ser executado em 
 http://localhost:3000/
 
+
+----------------------------------------------------------------------------------------
+Registro do projeto no GitHub
+----------------------------------------------------------------------------------------
+git ini		
+inicia um projeto git na pasta onde foi executado
+
+git status	
+exibe o status dos arquivos
+
+git add *	
+inclui todos os arquivos no controle de versão
+
+git commit -m "enviando o projeto desenvolvido no curso para o github"
+confirma a alteração nos arquivos adicionados ao controle de versão
+
+git remote add origin https://github.com/andersonrocha79/curso-hcode-dropboxclone.git
+vincula o projeto git local para o github
+
+git push -u origin master
+envia o projeto local para os servidor github, no branch 'master'
