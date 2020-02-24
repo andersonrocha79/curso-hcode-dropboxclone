@@ -1,0 +1,30 @@
+
+A pasta tem o arquivo "bower.json", indicando que tem dependências de front end
+para instalar as dependências visuais do projeto, basta executar o comando abaixo:
+bower install
+
+se o bower não estiver instalado, instalar com o comando abaixo:
+npm install bower -g
+
+cria a pasta do projeto do servidor express
+express --ejs app
+
+após executar o comando acima, acessar a pasta 'app' e realizar a instalação das dependências
+npm install
+
+instalação do pacote 'formidable' para tratar requisições ao servidor com arquivos
+npm install formidable --save
+
+para executar o servidor (http://localhost:3000/)
+npm start
+
+para parar o servidor
+control + c
+
+foi criado um projeto no firebase
+depois, em visão geral, cliquei na opção para adicionar um novo projeto web
+o firebase gerou os scripts que foram copiados para o arquivo index da aplicação
+com isso o firebase fica disponível para utilização
+
+
+

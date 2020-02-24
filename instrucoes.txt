@@ -1,0 +1,24 @@
+
+A pasta tem o arquivo "bower.json", indicando que tem dependências de front end
+para instalar as dependências visuais do projeto, basta executar o comando abaixo:
+bower install
+
+se o bower não estiver instalado, instalar com o comando abaixo:
+npm install bower -g
+
+cria a pasta do projeto do servidor express
+express --ejs app
+
+após executar o comando acima, acessar a pasta 'app' e realizar a instalação das dependências
+npm install
+
+copiar os arquivos html do site e colocar na pasta 'app\public'
+o arquivo index.html deve ser movido para a pasta views
+remover o index.ejs criado pelo express e renomear o index.html para index.ejs
+
+para executar a aplicação com o servidor express executar o comando 
+npm start
+
+o site vai ser executado em 
+http://localhost:3000/
+
