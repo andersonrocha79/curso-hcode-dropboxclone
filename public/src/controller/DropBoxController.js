@@ -7,11 +7,16 @@ class DropBoxController
         // # seleciona pelo id
         // . seleciona pela classe
 
+        // armazena a pasta atual e subpastas
+        // primeiro nó (hcode)
+        this.currentFolder = ['hcode'];
+
         // criando um evento que será disparado
         // sempre que a seleção da lista for alterada
         this.onSelectionChange = new Event('selectionChange');
 
         // criando referência para os objetos de tela
+        this.navEl         = document.querySelector("#browse-location");        
         this.btnSendFileEl = document.querySelector('#btn-send-file');
         this.inputFilesEl  = document.querySelector('#files');
         this.snackModalEl  = document.querySelector('#react-snackbar-root');
@@ -30,8 +35,8 @@ class DropBoxController
         // configurando os eventos dos objetos de tela
         this.initEvents();
 
-        // faz a leitura dos registros do firebase
-        this.readFiles();
+        // abre a pasta 'raiz'
+        this.openFolder();
 
     }
 
@@ -100,6 +105,40 @@ class DropBoxController
 
     initEvents()
     {
+
+        // evento ao clicar no botão 'nova pasta'
+        this.btnNewFolder.addEventListener('click', e =>
+        {
+
+            // solicita o nome da pasta
+            let name = prompt('Informe o nome da nova pasta:' );
+
+            // inicia o objeto que irá armazenar o registro da nova pasta
+            let novaPasta;
+
+            // verifica se o nome foi informado
+            if (name)
+            {
+                // cria um novo registro json, passando
+                // os dados da nova pasta criada 
+                // currentFolder é um array que tem o caminho das pastas selecionadas
+                // o método join une este caminhos do array, separando por '/'
+
+                // cria um objeto que representa a nova pasta
+                novaPasta = {
+                                name: name,
+                                type: 'folder',
+                                path: this.currentFolder.join('/')
+                            };
+
+                // inclui o registro no firebase            
+                this.getFirebaseRef().push().set(novaPasta);
+
+            }
+
+            console.log('criou uma nova pasta: ', novaPasta);
+
+        });
 
         // define o que deve ser feito ao clicar no botão 'excluir'
         this.btnDelete.addEventListener('click', e =>
@@ -268,9 +307,22 @@ class DropBoxController
 
     }
 
-    getFirebaseRef()
+    // faz a chamada para retornar uma referencia
+    // do firebase, no path solicitado
+    getFirebaseRef(path)    
     {
-        return firebase.database().ref('files');
+
+        if (!path)
+        {
+            // se não passar um caminho, pega
+            // o caminho especificado no array 'current folder',
+            // separando os itens do array por '/'
+            path = this.currentFolder.join('/');
+        }
+        
+        // acessa o caminho e retorna o objeto firebase
+        return firebase.database().ref(path);
+
     }
 
     ajax(url, 
@@ -624,10 +676,165 @@ class DropBoxController
 
     }
 
+    // abre a pasta e demonstra os arquivos e subpastas dentro desta pasta
+    openFolder()
+    {
+
+        // verifica se estava em algum pasta anterior
+        if (this.lastFolder)
+        {
+            // avisa ao firebase para parar de ficar
+            // notificando alterações na pasta anterior,
+            // porque vamos passar a 'trabalhar' e 'ouvir' uma nova pasta
+            this.getFirebaseRef(this.lastFolder).off('value');
+        }
+
+        // atualiza o título da pasta,
+        // que demonstra o caminho de pastas percorrido até o momento
+        this.renderNav();
+
+        // faz a leitura dos registros do firebase
+        // dentro da pasta 'atual'
+        this.readFiles();
+
+    }
+
+    renderNav()
+    {
+
+        // cria uma nova 'tag' 'nav'
+        let nav = document.createElement('nav');
+
+        // array que demonstra o caminho completo da pasta
+        let path = [];
+
+        // percorre os itens do array que armazena
+        // as pastas clicadas pelo usuário
+        for (let i = 0; i < this.currentFolder.length; i++)
+        {
+
+            // armazena o nome da pasta
+            let folderName = this.currentFolder[i];
+
+            // cria o span que representa um elemento na lista
+            let span = document.createElement('span');
+
+            // inclui a pasta atual no array que representa o caminho completo
+            path.push(folderName);
+
+            // se for o último item do array, o layout é diferente
+            if ((i + 1) === this.currentFolder.length)
+            {
+
+                // é o último item da lista
+                span.innerHTML = folderName;
+
+            }
+            else
+            {
+
+                // define a classe da span
+                span.className = "breadcrumb-segment__wrapper";
+
+                // define o conteúdo do span
+                span.innerHTML = `<span class="ue-effect-container uee-BreadCrumbSegment-link-0">
+                                     <a href="#" data-path="${path.join('/')}"  
+                                     class="breadcrumb-segment">${folderName}</a>
+                                  </span>
+                                  <svg width="24" height="24" viewBox="0 0 24 24" class="mc-icon-template-stateless" style="top: 4px; position: relative;">
+                                     <title>arrow-right</title>
+                                     <path d="M10.414 7.05l4.95 4.95-4.95 4.95L9 15.534 12.536 12 9 8.464z" fill="#637282" fill-rule="evenodd"></path>
+                                  </svg>
+                                 `;
+
+            }       
+            
+            // não é o último item da lista
+            nav.appendChild(span);            
+
+        }
+
+        this.navEl.innerHTML = nav.innerHTML;
+
+        // percorre todos os 'links', objeto 'a'
+        // que estejam no html do elemento navEl
+        this.navEl.querySelectorAll('a').forEach(a=>
+        {
+
+            // define o evento de clique em cada
+            // um dos links existentes nas subpastas da navegação
+            a.addEventListener('click', e=>
+            {
+
+                // aborta o comportamento padrão do clique no elemento
+                e.preventDefault();
+
+                // altera a currentfolder, de acordo com
+                // o caminho da folder definido em cada item do navEl
+                // transforma a string que está no dataset do elemento
+                // em array novamente
+                this.currentFolder = a.dataset.path.split('/');
+
+                // abre a pasta atual novamente
+                this.openFolder();
+
+            });
+
+        });
+
+        /*
+        html modelo do nav, copiado da página atual
+        <span class="breadcrumb-segment__wrapper">
+            <span class="ue-effect-container uee-BreadCrumbSegment-link-0">
+                <a href="https://www.dropbox.com/work" class="breadcrumb-segment">HCODE</a>
+            </span>
+            <svg width="24" height="24" viewBox="0 0 24 24" class="mc-icon-template-stateless" style="top: 4px; position: relative;">
+                <title>arrow-right</title>
+                <path d="M10.414 7.05l4.95 4.95-4.95 4.95L9 15.534 12.536 12 9 8.464z" fill="#637282" fill-rule="evenodd"></path>
+            </svg>
+        </span>
+        */
+
+    }
+
     initEventsLi(li)
     {
 
-        // cria o evento de clique no registro da tabela
+        // cria o evento para o clique duplo na linha da tabela
+        li.addEventListener('dblclick', event =>
+        {
+
+            console.log('executou o click duplo');
+
+            // pega o 'registro' json que está em 'dataset.file' 
+            // e converte de texto para objeto javascript e armazena na variável 'file'
+            let file = JSON.parse(li.dataset.file);
+
+            // verifica o tipo do item clicado, para saber se é uma pasta
+            switch (file.type)
+            {
+
+                case 'folder':
+                    // clicou em uma pasta
+                    // inclui o nome da pasta atual ao array
+                    // que armazena o caminho de pastas e subpastas clicados
+                    console.log('abriu o conteúdo da pasta: ', file);
+                    // inclui a pasta clicada no array que representa a pasta atual
+                    this.currentFolder.push(file.name);
+                    // executa a função para demonstrar o conteúdo da pasta atual
+                    this.openFolder();
+                    break;
+
+                default:
+                    // se não for uma pasta, tenta abrir o arquivo
+                    // window.open('/file?path=' + file.path);
+                    window.open( file.path);
+            }
+
+
+        });
+
+        // cria o evento de clique na linha da tabela
         li.addEventListener('click', e=>
         {
 
@@ -728,12 +935,19 @@ class DropBoxController
 
     readFiles()
     {
+
+        // sempre que abrir uma pasta e ler os arquivos
+        // armazena em 'lastFolder' o caminho 'string'
+        // da ultima pasta selecionada
+        this.lastFolder = this.currentFolder.join('/');
+
         // cria um evento que busca os registros
         // do nó 'files' do firebase, e fica 'escutando'
-        // para ser executado sempre que os dados foram alterados
-        // no servidor
+        // para ser executado sempre que os dados foram alterados no servidor
         this.getFirebaseRef().on('value', snapshot =>
         {
+
+            console.log("Recebeu notificação do firebase: ", snapshot);
 
             this.listFilesEl.innerHTML = "";
 
@@ -746,8 +960,13 @@ class DropBoxController
                 // armazena o conteúdo do registro (json)
                 let data = snapshotItem.val(); 
 
-                // inclui uma nova linha da tabela com os dados do registro
-                this.listFilesEl.appendChild(this.getFileView(data, key));
+                // verifica se tem a propriedade 'type'
+                // se não tiver, indica que é um registro de 'subpastas', e não o conteúdo da pasta
+                if (data.type)
+                {
+                    // inclui uma nova linha da tabela com os dados do registro
+                    this.listFilesEl.appendChild(this.getFileView(data, key));
+                }
                 
             });
 
