@@ -60,8 +60,8 @@ class DropBoxController
         if (!firebase.apps.length) 
         {
             firebase.initializeApp(firebaseConfig);
-            firebase.analytics();
-         }
+            // firebase.analytics();
+        }
         
     }
 
@@ -260,11 +260,31 @@ class DropBoxController
             this.uploadTask(event.target.files).then(responses =>
             {
 
+                console.log('respostas do método uploadTask: ', responses);
+
                 responses.forEach(resp => 
                 {
 
-                    // grava os dados do arquivo no firebase                    
-                    this.getFirebaseRef().push().set(resp.files['input-file']);
+                    // grava os dados do arquivo no firebase      
+                    // *** versão anterior, quando armazenava o arquivo no servidor http              
+                    // this.getFirebaseRef().push().set(resp.files['input-file']);
+
+                    console.log('retorno do firebase: ', resp);
+
+                    // *** versão storage
+                    // novo modo de buscar a URL do arqv no Firebase
+                    resp.ref.getDownloadURL().then(downloadURL => 
+                        {
+ 
+                        // add uma nova entrada no DB
+                        this.getFirebaseRef().push().set({
+                            name: resp.name,
+                            type: resp.contentType,
+                            path: downloadURL,
+                            size: resp.size
+                        });
+ 
+                    });
 
                 });
 
@@ -378,6 +398,9 @@ class DropBoxController
 
     }
 
+    // versão da função para armazenar
+    // os arquivos no servidor http
+    /*
     uploadTask(files)
     {
 
@@ -418,6 +441,81 @@ class DropBoxController
         return Promise.all(promises)
 
     }
+    */
+
+    // versão da função para
+    // armazenar os arquivos no 'storage' do firebase
+    uploadTask(files)
+    {
+
+       // inicializa o array de promessas
+       // uma promessa para cada arquivo
+       let promises = []; 
+
+       // percorre a lista de arquivos
+       // e inclui no array, uma promessa para cada arquivo a ser enviado
+       [...files].forEach(file =>
+       {
+
+           // inclui a promessa na lista de promessas
+           promises.push(new Promise((resolve, reject) =>
+           {
+
+                // cria a referência para armazenamento do arquivo
+                let fileRef = firebase.storage().ref(this.currentFolder.join("/")).child(file.name);     
+
+                // faz o upload do arquivo
+                // retorna a 'task' para monitorar o envio do arquivo
+                let task = fileRef.put(file);
+
+                // fica escutando o firebase para analisar como está o processamento
+                task.on('state_changed', 
+                    snapshot =>
+                    {
+                        // método que demonstra o processamento
+                        console.log('progresso do envio', snapshot);
+                        // atualiza a barra com o percentual de envio do arquivo
+                        this.uploadProgress(
+                            {
+                                loaded : snapshot.bytesTransferred,
+                                total: snapshot.totalBytes
+                            }, 
+                            file);
+                    },
+                    error =>
+                    {
+                        // método a ser executado quando ocorrer erro no envio do arquivo
+                        console.error(error);
+                        // executa o método 'reject' da promessa, caso ocorra erro
+                        reject(error);
+                    },
+                    () =>
+                    {
+                        // busca os metadados do arquivo enviado
+                        fileRef.getMetadata().then(metadata=>
+                        {
+
+                            // executa o método resolve da promessa,
+                            // indicando que houve sucesso no envio do arquivo
+                            resolve(metadata);
+
+                        }).catch(err =>
+                        {
+                            // executa o reject, indicando erro no envio
+                            reject(err);
+                        });
+
+                    });
+
+           }));
+
+       });
+
+       // executa todas as promessas
+       // de uma única vez com o método .all
+       return Promise.all(promises)
+
+   }    
 
     // atualiza o percentual de envio do arquivo
     uploadProgress(event, file)

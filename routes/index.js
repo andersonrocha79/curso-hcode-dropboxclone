@@ -8,6 +8,44 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
+// rota 'get' para abrir os arquivos
+router.get('/file', (req, res)  =>
+{
+
+   // armazena o caminho do arquivo
+   let path = '.' + req.query.path;
+
+   // verifica se o arquivo existe
+   if (fs.existsSync(path))
+   {
+
+      // o arquivo existe
+      // le o conteúdo do arquivo
+      fs.readFile(path, (err, data) =>
+      {
+         // verifica se ocorreu algum erro
+         // na leitura do arquivo
+         if (err)
+         {
+            // retorna o erro
+            console.error(err);
+            res.status(400).json({error: err});
+         }
+         else
+         {
+            // retorna o conteúdo do arquivo
+            res.status(200).end(data);
+         }
+      });
+
+   }
+   else
+   {
+      res.status(404).json({error: "file not found."});
+   }
+
+});
+
 // rota do método delete para excluir o arquivo
 router.delete('/file', (req, res)=>
 {
@@ -43,7 +81,11 @@ router.delete('/file', (req, res)=>
                }
 
             });
-         }      
+         } 
+         else
+         {
+            res.status(404).json({error: "file not found."});
+         }              
 
       });
 
