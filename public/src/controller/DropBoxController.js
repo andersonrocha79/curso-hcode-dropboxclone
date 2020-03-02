@@ -88,6 +88,8 @@ class DropBoxController
             let file = JSON.parse(li.dataset.file);
             let key  = li.dataset.key;
 
+            // versão anterior, utilizando ajax e servidor http
+            /*
             // cria o form data e passa os parâmetros do formulário
             let formData = new FormData();
             formData.append('path', file.path);
@@ -95,11 +97,131 @@ class DropBoxController
 
             // inclui a promisse na lista de promises
             promises.push(this.ajax('/file', 'DELETE', formData));
+            */
+
+            // nova versão utilizando o 'storage'
+            promises.push(new Promise((resolve, reject) =>
+            {
+
+                // verifica se a referência é um arquivo ou uma pasta
+                if (file.type === 'folder')
+                {
+
+                    this.removeFolderTask(this.currentFolder.join('/'), file.name).then( () =>
+                    {
+                        // se conseguir realizar a exclusão da pasta
+                        // executa o 'resolve' da promessa   
+                        resolve({fields: {key: key}});    
+                    });
+
+                }
+                else if (file.type)
+                {
+
+                    // executa o método 'removeFile' que retorna
+                    // uma promessa de exclusão do arquivo
+                    this.removeFile(this.currentFolder.join('/'), file.name).then( () =>
+                    {
+                        // se conseguir realizar a exclusão
+                        // executa o 'resolve' da promessa   
+                        resolve({fields: {key: key}});    
+                    });
+                }
+
+            }));
 
         });
 
         // o retorno desta função será o array de promessas, uma para cada arquivo
         return Promise.all(promises);
+
+    }
+
+    // exclui a pasta do storage
+    removeFolderTask(ref, name)
+    {
+
+        return new Promise((resolve, reject) =>
+        {
+
+            // faz referência a pasta no 'firebase'
+            let folderRef = this.getFirebaseRef(ref + "/" + name);
+
+            // escuta a pasta no firebase, para
+            // receber os itens da pasta selecionada
+            folderRef.on('value', snapshot =>
+            {
+
+                // desliga a escuta a referência do firebase
+                // para que não execute o método 'on(value)' novamente quando os arquivos forem excluídos
+                folderRef.off('value');                
+
+                // percorre os itens da pasta
+                // retornados pelo firebase
+                snapshot.forEach(item =>
+                {
+
+                    let data = item.val();
+                    data.key = item.key;
+
+                    // verifica se o item retornado pelo firebase
+                    // é um arquivo ou uma pasta
+                    if (data.type === 'folder')
+                    {
+
+                        // o item é uma pasta
+
+                        // se tiver uma pasta filha
+                        // chama novamente a função de excluir pasta recursivamente
+                        this.removeFolderTask(ref + "/" + name, data.name).then( () =>
+                        {
+                            resolve({fields:{key: data.key}});
+                        }).catch(err =>
+                        {
+                            reject(err);
+                        }); 
+
+                    }
+                    else if (data.type)
+                    {
+
+                        // o item é o arquivo
+                        // faz a exclusão do arquivo
+                        this.removeFile(ref + "/" + name, data.name).then( () =>
+                        {
+                            resolve({fields:{key: data.key}});
+                        }).catch(err =>
+                        {
+                            reject(err);
+                        }); 
+                        
+                    }
+
+                });
+
+                // remove a pasta
+                folderRef.remove();
+
+
+
+            })
+       
+
+        });
+
+
+
+    }    
+
+    // exclui o arquivo do storage
+    removeFile(ref, name)
+    {
+
+        // faz referência ao arquivo no 'storage'
+        let fileRef = firebase.storage().ref(ref).child(name);
+
+        // retorna a referência a 'promessa' de exclusão do arquivo
+        return fileRef.delete();
 
     }
 
@@ -925,8 +1047,8 @@ class DropBoxController
 
                 default:
                     // se não for uma pasta, tenta abrir o arquivo
-                    // window.open('/file?path=' + file.path);
-                    window.open( file.path);
+                    // window.open('/file?path=' + file.path); // versão anterior, no servidor http
+                    window.open(file.path);
             }
 
 
